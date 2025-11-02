@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial Interattivo: Transformer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .architecture {
+            display: flex;
+            justify-content: space-around;
+            gap: 40px;
+            margin: 40px 0;
+            position: relative;
+        }
+
+        .column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .column-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .block {
+            width: 100%;
+            max-width: 300px;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            border: 3px solid transparent;
+            text-align: center;
+        }
+
+        .block:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .block.active {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .block.animating {
+            animation: pulse 1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .input-block { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); }
+        .embedding-block { background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); }
+        .positional-block { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .attention-block { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+        .feedforward-block { background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%); }
+        .norm-block { background: linear-gradient(135deg, #fdcbf1 0%, #e6dee9 100%); }
+        .output-block { background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%); color: white; }
+
+        .arrow {
+            width: 3px;
+            height: 20px;
+            background: #667eea;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #667eea;
+        }
+
+        .info-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 30px;
+            min-height: 200px;
+            border-left: 5px solid #667eea;
+        }
+
+        .info-panel h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .info-panel p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 12px;
+            font-size: 1.05em;
+        }
+
+        .info-panel ul {
+            margin-left: 25px;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .info-panel li {
+            margin-bottom: 8px;
+        }
+
+        .visualization {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .matrix {
+            display: inline-grid;
+            gap: 4px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 10px;
+        }
+
+        .matrix-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .matrix-cell:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .token-flow {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .token {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            animation: tokenFloat 2s ease-in-out infinite;
+        }
+
+        @keyframes tokenFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .attention-head {
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            border-radius: 50%;
+            margin: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .attention-head:hover {
+            transform: scale(1.2) rotate(10deg);
+        }
+
+        .qkv-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .qkv-matrix {
+            text-align: center;
+        }
+
+        .qkv-label {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .matrix-3d {
+            perspective: 1000px;
+            display: inline-block;
+        }
+
+        .matrix-3d:hover .matrix {
+            transform: rotateY(15deg) rotateX(10deg);
+        }
+
+        .attention-score {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .translation-demo {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            color: white;
+        }
+
+        .translation-step {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .sentence-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .sentence-box {
+            flex: 1;
+            min-width: 250px;
+            background: rgba(255,255,255,0.3);
+            padding: 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .sentence-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .word-token {
+            display: inline-block;
+            padding: 8px 15px;
+            background: white;
+            color: #667eea;
+            border-radius: 6px;
+            margin: 5px;
+            font-weight: bold;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .word-token:hover {
+            transform: scale(1.1) translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .arrow-translation {
+            font-size: 3em;
+            color: white;
+            animation: arrowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { transform: translateX(0); opacity: 0.6; }
+            50% { transform: translateX(10px); opacity: 1; }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #84fab0 0%, #8fd3f4 100%);
+            width: 0%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .attention-heatmap {
+            display: inline-grid;
+            gap: 2px;
+            margin: 20px auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .heatmap-cell {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.2);
+            z-index: 10;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .word-label {
+            font-weight: bold;
+            color: #667eea;
+            margin: 5px;
+        }
+
+        .code-example {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        .highlight {
+            color: #a6e22e;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Tutorial Interattivo: Architettura Transformer</h1>
+        <p class="subtitle">Clicca su ogni componente per esplorare come funziona</p>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="animateFlow()">▶️ Anima Flusso Dati</button>
+            <button class="btn btn-secondary" onclick="resetAnimation()">🔄 Reset</button>
+            <button class="btn btn-secondary" onclick="showOverview()">📋 Panoramica</button>
+            <button class="btn btn-primary" onclick="showTranslationDemo()">🌍 Demo Traduzione</button>
+            <button class="btn btn-primary" onclick="showQKVVisualization()">🔍 Visualizza Q, K, V</button>
+        </div>
+
+        <div class="architecture">
+            <div class="column">
+                <div class="column-title">ENCODER</div>
+                
+                <div class="block input-block" onclick="showInfo('input')">
+                    <strong>Input Tokens</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Sequenza di input</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block embedding-block" onclick="showInfo('embedding')">
+                    <strong>Token Embedding</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Vettori d=512</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block positional-block" onclick="showInfo('positional')">
+                    <strong>Positional Encoding</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Informazione posizionale</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block attention-block" onclick="showInfo('attention')">
+                    <strong>Multi-Head Attention</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">8 teste parallele</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block norm-block" onclick="showInfo('norm')">
+                    <strong>Add & Norm</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Residual + LayerNorm</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block feedforward-block" onclick="showInfo('feedforward')">
+                    <strong>Feed Forward</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">FFN(x) = max(0, xW₁+b₁)W₂+b₂</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block norm-block" onclick="showInfo('norm2')">
+                    <strong>Add & Norm</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Residual + LayerNorm</div>
+                </div>
+            </div>
+
+            <div class="column">
+                <div class="column-title">DECODER</div>
+                
+                <div class="block input-block" onclick="showInfo('output-input')">
+                    <strong>Output Tokens</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Sequenza di output</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block embedding-block" onclick="showInfo('output-embedding')">
+                    <strong>Token Embedding</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Vettori d=512</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block positional-block" onclick="showInfo('output-positional')">
+                    <strong>Positional Encoding</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Informazione posizionale</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block attention-block" onclick="showInfo('masked-attention')">
+                    <strong>Masked Multi-Head Attention</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Previene look-ahead</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block norm-block" onclick="showInfo('decoder-norm1')">
+                    <strong>Add & Norm</strong>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block attention-block" onclick="showInfo('cross-attention')">
+                    <strong>Cross Attention</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Encoder-Decoder</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block norm-block" onclick="showInfo('decoder-norm2')">
+                    <strong>Add & Norm</strong>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block feedforward-block" onclick="showInfo('decoder-ff')">
+                    <strong>Feed Forward</strong>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block norm-block" onclick="showInfo('decoder-norm3')">
+                    <strong>Add & Norm</strong>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="block output-block" onclick="showInfo('final-output')">
+                    <strong>Linear + Softmax</strong>
+                    <div style="font-size: 0.9em; margin-top: 8px;">Predizione token</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color input-block"></div>
+                <span>Input/Output</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color embedding-block"></div>
+                <span>Embedding</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color positional-block"></div>
+                <span>Positional</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color attention-block"></div>
+                <span>Attention</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color feedforward-block"></div>
+                <span>Feed Forward</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color norm-block"></div>
+                <span>Normalization</span>
+            </div>
+        </div>
+
+        <div class="info-panel" id="infoPanel">
+            <h2>Benvenuto! 👋</h2>
+            <p>Questo è un tutorial interattivo sull'architettura Transformer, introdotta nel paper "Attention is All You Need" (2017).</p>
+            <p><strong>Come usare questo tutorial:</strong></p>
+            <ul>
+                <li>Clicca su qualsiasi blocco per vedere spiegazioni dettagliate</li>
+                <li>Usa il pulsante "Anima Flusso Dati" per vedere come i dati si muovono attraverso la rete</li>
+                <li>Esplora le visualizzazioni interattive per ogni componente</li>
+            </ul>
+            <p>I Transformer hanno rivoluzionato il NLP e sono alla base di modelli come GPT, BERT, e molti altri!</p>
+        </div>
+
+        <div class="visualization" id="visualization" style="display:none;"></div>
+    </div>
+
+    <script>
+        const info = {
+            'input': {
+                title: 'Input Tokens',
+                content: `
+                    <p>L'input è una sequenza di token (parole o subword) che rappresentano il testo da processare.</p>
+                    <div class="token-flow">
+                        <div class="token">Il</div>
+                        <div class="token">gatto</div>
+                        <div class="token">dorme</div>
+                    </div>
+                    <p><strong>Processo:</strong></p>
+                    <ul>
+                        <li>Il testo viene tokenizzato (diviso in unità)</li>
+                        <li>Ogni token viene convertito in un ID numerico</li>
+                        <li>Gli ID vengono passati al layer di embedding</li>
+                    </ul>
+                `
+            },
+            'embedding': {
+                title: 'Token Embedding',
+                content: `
+                    <p>Ogni token viene mappato in uno spazio vettoriale di dimensione d=512 (nel Transformer originale).</p>
+                    <p><strong>Esempio:</strong> "gatto" → [0.2, -0.5, 0.8, ..., 0.1] (512 dimensioni)</p>
+                    <div class="code-example">
+<span class="highlight">embedding_matrix</span> = nn.Embedding(vocab_size, d_model)
+output = <span class="highlight">embedding_matrix</span>(input_ids) * sqrt(d_model)
+                    </div>
+                    <p><strong>Perché moltiplicare per √d_model?</strong> Per stabilizzare la scala dei valori prima di aggiungere il positional encoding.</p>
+                `
+            },
+            'positional': {
+                title: 'Positional Encoding',
+                content: `
+                    <p>Siccome i Transformer non hanno ricorrenza, dobbiamo aggiungere informazioni sulla posizione dei token.</p>
+                    <p><strong>Formula:</strong></p>
+                    <div class="code-example">
+PE(pos, 2i) = sin(pos / 10000^(2i/d_model))
+PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))
+                    </div>
+                    <p>Dove:</p>
+                    <ul>
+                        <li><strong>pos</strong> = posizione del token nella sequenza</li>
+                        <li><strong>i</strong> = dimensione nel vettore embedding</li>
+                        <li><strong>d_model</strong> = dimensione del modello (512)</li>
+                    </ul>
+                    <p>Questo encoding permette al modello di apprendere facilmente le posizioni relative.</p>
+                `
+            },
+            'attention': {
+                title: 'Multi-Head Self-Attention',
+                content: `
+                    <p>Il cuore del Transformer! Permette ad ogni token di "guardare" tutti gli altri token e decidere quanto sono rilevanti.</p>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div class="attention-head">H1</div>
+                        <div class="attention-head">H2</div>
+                        <div class="attention-head">H3</div>
+                        <div class="attention-head">H4</div>
+                        <div class="attention-head">H5</div>
+                        <div class="attention-head">H6</div>
+                        <div class="attention-head">H7</div>
+                        <div class="attention-head">H8</div>
+                    </div>
+                    <p><strong>Formula dell'Attention:</strong></p>
+                    <div class="code-example">
+Attention(Q, K, V) = softmax(QK^T / √d_k) V
+                    </div>
+                    <p><strong>Componenti:</strong></p>
+                    <ul>
+                        <li><strong>Q (Query):</strong> "Cosa sto cercando?"</li>
+                        <li><strong>K (Key):</strong> "Cosa offro?"</li>
+                        <li><strong>V (Value):</strong> "Qual è il mio contenuto?"</li>
+                    </ul>
+                    <p>Le 8 teste lavorano in parallelo, ognuna imparando a catturare diversi tipi di relazioni (sintattiche, semantiche, ecc.).</p>
+                    <button class="btn btn-primary" onclick="showQKVVisualization()" style="margin-top: 15px;">🔍 Visualizza Q, K, V in dettaglio</button>
+                `
+            },
+            'norm': {
+                title: 'Add & Norm (Residual Connection + Layer Normalization)',
+                content: `
+                    <p>Combina due tecniche fondamentali per l'addestramento di reti profonde:</p>
+                    <p><strong>1. Residual Connection (Skip Connection):</strong></p>
+                    <div class="code-example">
+output = LayerNorm(x + Sublayer(x))
+                    </div>
+                    <p>Permette al gradiente di fluire direttamente attraverso la rete, facilitando l'addestramento.</p>
+                    <p><strong>2. Layer Normalization:</strong></p>
+                    <ul>
+                        <li>Normalizza le attivazioni lungo la dimensione delle feature</li>
+                        <li>Stabilizza l'addestramento</li>
+                        <li>Permette di usare learning rate più alti</li>
+                    </ul>
+                `
+            },
+            'feedforward': {
+                title: 'Position-wise Feed-Forward Network',
+                content: `
+                    <p>Una rete neurale fully-connected applicata indipendentemente a ogni posizione.</p>
+                    <div class="code-example">
+FFN(x) = max(0, xW₁ + b₁)W₂ + b₂
+                    </div>
+                    <p><strong>Architettura:</strong></p>
+                    <ul>
+                        <li>Input: 512 dimensioni</li>
+                        <li>Hidden layer: 2048 dimensioni (espansione 4x)</li>
+                        <li>Output: 512 dimensioni</li>
+                        <li>Attivazione: ReLU</li>
+                    </ul>
+                    <p>Questo layer permette al modello di processare le informazioni raccolte dall'attention in modo non-lineare.</p>
+                `
+            },
+            'masked-attention': {
+                title: 'Masked Multi-Head Attention',
+                content: `
+                    <p>Simile alla self-attention, ma con una maschera che previene di guardare i token futuri.</p>
+                    <p><strong>Perché?</strong> Durante il training, dobbiamo prevenire che il decoder "bari" guardando i token che deve predire!</p>
+                    <div class="code-example">
+# Maschera applicata prima del softmax
+scores = QK^T / √d_k
+scores = scores.masked_fill(mask == 0, -1e9)
+attention = softmax(scores)
+                    </div>
+                    <p>La maschera è una matrice triangolare inferiore che permette solo di guardare i token precedenti.</p>
+                `
+            },
+            'cross-attention': {
+                title: 'Cross Attention (Encoder-Decoder Attention)',
+                content: `
+                    <p>Questo è dove l'encoder e il decoder si collegano!</p>
+                    <p><strong>Differenza dalla Self-Attention:</strong></p>
+                    <ul>
+                        <li><strong>Q (Query):</strong> Viene dal decoder (output che stiamo generando)</li>
+                        <li><strong>K, V (Key, Value):</strong> Vengono dall'encoder (input originale)</li>
+                    </ul>
+                    <div class="code-example">
+# Il decoder "chiede" all'encoder
+Q = decoder_output
+K = encoder_output
+V = encoder_output
+attention = softmax(QK^T / √d_k) V
+                    </div>
+                    <p>Permette al decoder di "guardare" l'intera sequenza di input mentre genera l'output.</p>
+                `
+            },
+            'final-output': {
+                title: 'Linear + Softmax',
+                content: `
+                    <p>Gli ultimi layer convertono i vettori del decoder in probabilità sui token del vocabolario.</p>
+                    <p><strong>Processo:</strong></p>
+                    <div class="code-example">
+# Linear projection
+logits = output @ W_vocab  # [batch, seq_len, vocab_size]
+
+# Softmax per ottenere probabilità
+probabilities = softmax(logits)
+
+# Scegli il token più probabile
+next_token = argmax(probabilities)
+                    </div>
+                    <p><strong>Durante l'inferenza:</strong> Il token predetto viene aggiunto alla sequenza e il processo continua autoregressivamente.</p>
+                `
+            },
+            'norm2': {
+                title: 'Add & Norm',
+                content: `
+                    <p>Seconda applicazione di residual connection e layer normalization dopo il feed-forward network.</p>
+                    <p>Questo pattern (Attention → Add&Norm → FFN → Add&Norm) viene ripetuto N volte (6 volte nel Transformer originale).</p>
+                `
+            },
+            'output-input': {
+                title: 'Output Tokens (Shifted Right)',
+                content: `
+                    <p>Durante il training, l'input del decoder è la sequenza target shiftata di una posizione.</p>
+                    <p><strong>Esempio:</strong></p>
+                    <ul>
+                        <li>Target: "Il gatto dorme"</li>
+                        <li>Decoder input: "&lt;START&gt; Il gatto"</li>
+                        <li>Decoder output: "Il gatto dorme"</li>
+                    </ul>
+                    <p>Questo permette al modello di imparare a predire il token successivo dato il contesto precedente.</p>
+                `
+            },
+            'output-embedding': {
+                title: 'Output Embedding',
+                content: `
+                    <p>Identico all'embedding dell'encoder. Spesso i pesi vengono condivisi tra encoder e decoder embedding.</p>
+                    <p>Converte i token di output in vettori densi di 512 dimensioni.</p>
+                `
+            },
+            'output-positional': {
+                title: 'Output Positional Encoding',
+                content: `
+                    <p>Stesso positional encoding usato nell'encoder, applicato all'output embedding.</p>
+                    <p>Cruciale per mantenere l'informazione sull'ordine dei token nella sequenza di output.</p>
+                `
+            },
+            'decoder-norm1': {
+                title: 'Add & Norm (dopo Masked Attention)',
+                content: `<p>Residual connection e normalization dopo il layer di masked self-attention.</p>`
+            },
+            'decoder-norm2': {
+                title: 'Add & Norm (dopo Cross Attention)',
+                content: `<p>Residual connection e normalization dopo il layer di cross attention encoder-decoder.</p>`
+            },
+            'decoder-norm3': {
+                title: 'Add & Norm (dopo FFN)',
+                content: `<p>Ultima residual connection e normalization del decoder block.</p>`
+            },
+            'decoder-ff': {
+                title: 'Feed Forward (Decoder)',
+                content: `
+                    <p>Identico al feed-forward network dell'encoder:</p>
+                    <ul>
+                        <li>512 → 2048 → 512 dimensioni</li>
+                        <li>Attivazione ReLU</li>
+                        <li>Applicato indipendentemente a ogni posizione</li>
+                    </ul>
+                `
+            }
+        };
+
+        function showInfo(key) {
+            const panel = document.getElementById('infoPanel');
+            const vis = document.getElementById('visualization');
+            
+            // Remove active class from all blocks
+            document.querySelectorAll('.block').forEach(b => b.classList.remove('active'));
+            
+            // Add active class to clicked block
+            event.target.closest('.block').classList.add('active');
+            
+            if (info[key]) {
+                panel.innerHTML = `<h2>${info[key].title}</h2>${info[key].content}`;
+                vis.style.display = 'none';
+            }
+        }
+
+        function showOverview() {
+            const panel = document.getElementById('infoPanel');
+            panel.innerHTML = `
+                <h2>📋 Panoramica del Transformer</h2>
+                <p><strong>Innovazioni chiave:</strong></p>
+                <ul>
+                    <li><strong>Self-Attention:</strong> Ogni token può guardare tutti gli altri token, catturando dipendenze a lungo raggio</li>
+                    <li><strong>Parallelizzazione:</strong> A differenza delle RNN, tutto può essere processato in parallelo</li>
+                    <li><strong>Multi-Head Attention:</strong> Cattura diversi tipi di relazioni simultaneamente</li>
+                    <li><strong>Positional Encoding:</strong> Soluzione elegante per codificare la posizione senza ricorrenza</li>
+                </ul>
+                <p><strong>Applicazioni:</strong></p>
+                <ul>
+                    <li>Traduzione automatica (uso originale)</li>
+                    <li>Generazione di testo (GPT)</li>
+                    <li>Comprensione del linguaggio (BERT)</li>
+                    <li>Computer Vision (Vision Transformer)</li>
+                    <li>Speech recognition</li>
+                    <li>Modelli multimodali</li>
+                </ul>
+                <p><strong>Complessità:</strong></p>
+                <ul>
+                    <li>Self-Attention: O(n²·d) dove n = lunghezza sequenza, d = dimensione modello</li>
+                    <li>Feed-Forward: O(n·d²)</li>
+                </ul>
+                <p><strong>Parametri del Transformer originale:</strong> ~65M parametri per il modello base</p>
+            `;
+            document.querySelectorAll('.block').forEach(b => b.classList.remove('active'));
+        }
+
+        async function animateFlow() {
+            const blocks = document.querySelectorAll('.block');
+            const arrows = document.querySelectorAll('.arrow');
+            
+            // Reset
+            blocks.forEach(b => b.classList.remove('animating'));
+            
+            // Encoder animation
+            const encoderBlocks = Array.from(blocks).slice(0, 7);
+            for (let i = 0; i < encoderBlocks.length; i++) {
+                encoderBlocks[i].classList.add('animating');
+                await sleep(500);
+                encoderBlocks[i].classList.remove('animating');
+            }
+            
+            // Decoder animation
+            const decoderBlocks = Array.from(blocks).slice(7);
+            for (let i = 0; i < decoderBlocks.length; i++) {
+                decoderBlocks[i].classList.add('animating');
+                await sleep(500);
+                decoderBlocks[i].classList.remove('animating');
+            }
+            
+            // Show completion message
+            const panel = document.getElementById('infoPanel');
+            panel.innerHTML = `
+                <h2>✅ Animazione Completata!</h2>
+                <p>Hai appena visto il flusso di dati attraverso l'intera architettura Transformer:</p>
+                <ul>
+                    <li><strong>Encoder:</strong> Processa l'input e crea una rappresentazione contestuale</li>
+                    <li><strong>Decoder:</strong> Usa la rappresentazione dell'encoder per generare l'output token per token</li>
+                </ul>
+                <p><strong>Nota:</strong> Nell'implementazione reale, l'encoder viene eseguito una volta, mentre il decoder viene eseguito autoregressivamente per ogni token di output.</p>
+            `;
+        }
+
+        function resetAnimation() {
+            document.querySelectorAll('.block').forEach(b => {
+                b.classList.remove('animating', 'active');
+            });
+            showOverview();
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function showQKVVisualization() {
+            const vis = document.getElementById('visualization');
+            const panel = document.getElementById('infoPanel');
+            
+            panel.innerHTML = `
+                <h2>🔍 Visualizzazione Matrici Q, K, V</h2>
+                <p>Ecco come funziona il meccanismo di attention in dettaglio con un esempio pratico!</p>
+            `;
+            
+            vis.style.display = 'block';
+            vis.innerHTML = `
+                <h3 style="color: #667eea; text-align: center; margin-bottom: 20px;">Esempio: "Il gatto dorme"</h3>
+                
+                <div class="qkv-container">
+                    <div class="qkv-matrix">
+                        <div class="qkv-label">Query (Q)</div>
+                        <div class="matrix-3d">
+                            <div class="matrix" style="grid-template-columns: repeat(4, 1fr);">
+                                <div class="matrix-cell" style="background: #667eea; color: white;">0.2</div>
+                                <div class="matrix-cell" style="background: #667eea; color: white;">0.5</div>
+                                <div class="matrix-cell" style="background: #667eea; color: white;">-0.3</div>
+                                <div class="matrix-cell" style="background: #667eea; color: white;">0.8</div>
+                                <div class="matrix-cell" style="background: #7c8ee8; color: white;">0.1</div>
+                                <div class="matrix-cell" style="background: #7c8ee8; color: white;">-0.4</div>
+                                <div class="matrix-cell" style="background: #7c8ee8; color: white;">0.6</div>
+                                <div class="matrix-cell" style="background: #7c8ee8; color: white;">0.3</div>
+                                <div class="matrix-cell" style="background: #929ee6; color: white;">-0.2</div>
+                                <div class="matrix-cell" style="background: #929ee6; color: white;">0.7</div>
+                                <div class="matrix-cell" style="background: #929ee6; color: white;">0.4</div>
+                                <div class="matrix-cell" style="background: #929ee6; color: white;">-0.5</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            "Cosa sto cercando?"<br>
+                            [3 tokens × 4 dim]
+                        </div>
+                    </div>
+                    
+                    <div class="qkv-matrix">
+                        <div class="qkv-label">Key (K)</div>
+                        <div class="matrix-3d">
+                            <div class="matrix" style="grid-template-columns: repeat(4, 1fr);">
+                                <div class="matrix-cell" style="background: #f093fb; color: white;">0.3</div>
+                                <div class="matrix-cell" style="background: #f093fb; color: white;">-0.2</div>
+                                <div class="matrix-cell" style="background: #f093fb; color: white;">0.5</div>
+                                <div class="matrix-cell" style="background: #f093fb; color: white;">0.1</div>
+                                <div class="matrix-cell" style="background: #f3a0fb; color: white;">0.7</div>
+                                <div class="matrix-cell" style="background: #f3a0fb; color: white;">0.4</div>
+                                <div class="matrix-cell" style="background: #f3a0fb; color: white;">-0.3</div>
+                                <div class="matrix-cell" style="background: #f3a0fb; color: white;">0.6</div>
+                                <div class="matrix-cell" style="background: #f5adfb; color: white;">-0.1</div>
+                                <div class="matrix-cell" style="background: #f5adfb; color: white;">0.8</div>
+                                <div class="matrix-cell" style="background: #f5adfb; color: white;">0.2</div>
+                                <div class="matrix-cell" style="background: #f5adfb; color: white;">-0.4</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            "Cosa offro?"<br>
+                            [3 tokens × 4 dim]
+                        </div>
+                    </div>
+                    
+                    <div class="qkv-matrix">
+                        <div class="qkv-label">Value (V)</div>
+                        <div class="matrix-3d">
+                            <div class="matrix" style="grid-template-columns: repeat(4, 1fr);">
+                                <div class="matrix-cell" style="background: #84fab0; color: white;">0.5</div>
+                                <div class="matrix-cell" style="background: #84fab0; color: white;">0.2</div>
+                                <div class="matrix-cell" style="background: #84fab0; color: white;">-0.6</div>
+                                <div class="matrix-cell" style="background: #84fab0; color: white;">0.9</div>
+                                <div class="matrix-cell" style="background: #8ffbb5; color: white;">0.3</div>
+                                <div class="matrix-cell" style="background: #8ffbb5; color: white;">-0.5</div>
+                                <div class="matrix-cell" style="background: #8ffbb5; color: white;">0.7</div>
+                                <div class="matrix-cell" style="background: #8ffbb5; color: white;">0.1</div>
+                                <div class="matrix-cell" style="background: #9afcba; color: white;">-0.3</div>
+                                <div class="matrix-cell" style="background: #9afcba; color: white;">0.6</div>
+                                <div class="matrix-cell" style="background: #9afcba; color: white;">0.4</div>
+                                <div class="matrix-cell" style="background: #9afcba; color: white;">-0.8</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            "Qual è il mio contenuto?"<br>
+                            [3 tokens × 4 dim]
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <div style="font-size: 2em; color: #667eea;">⬇️</div>
+                    <div class="attention-score">
+                        Calcolo: QK^T / √d_k
+                    </div>
+                </div>
+                
+                <h3 style="color: #667eea; text-align: center; margin: 20px 0;">Attention Scores (dopo softmax)</h3>
+                <div style="text-align: center;">
+                    <div class="word-label">Query →</div>
+                    <div style="display: flex; justify-content: center; gap: 5px; margin: 10px 0;">
+                        <div class="word-label"></div>
+                        <div class="word-label">Il</div>
+                        <div class="word-label">gatto</div>
+                        <div class="word-label">dorme</div>
+                    </div>
+                    <div class="attention-heatmap" style="grid-template-columns: auto repeat(3, 50px);">
+                        <div class="word-label" style="width: 60px;">Il</div>
+                        <div class="heatmap-cell" style="background: #667eea;" title="Il → Il: 0.45">0.45</div>
+                        <div class="heatmap-cell" style="background: #8f9eeb;" title="Il → gatto: 0.35">0.35</div>
+                        <div class="heatmap-cell" style="background: #b8c4ee;" title="Il → dorme: 0.20">0.20</div>
+                        
+                        <div class="word-label" style="width: 60px;">gatto</div>
+                        <div class="heatmap-cell" style="background: #9aa9ec;" title="gatto → Il: 0.30">0.30</div>
+                        <div class="heatmap-cell" style="background: #5a6fe7;" title="gatto → gatto: 0.55">0.55</div>
+                        <div class="heatmap-cell" style="background: #c7d0f0;" title="gatto → dorme: 0.15">0.15</div>
+                        
+                        <div class="word-label" style="width: 60px;">dorme</div>
+                        <div class="heatmap-cell" style="background: #c7d0f0;" title="dorme → Il: 0.15">0.15</div>
+                        <div class="heatmap-cell" style="background: #7d8de9;" title="dorme → gatto: 0.40">0.40</div>
+                        <div class="heatmap-cell" style="background: #667eea;" title="dorme → dorme: 0.45">0.45</div>
+                    </div>
+                </div>
+                
+                <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">💡 Interpretazione:</h4>
+                    <ul style="line-height: 1.8;">
+                        <li><strong>Colori più scuri = Attention più forte:</strong> Il modello presta più attenzione a quella relazione</li>
+                        <li><strong>"gatto" → "gatto" (0.55):</strong> Ogni parola presta molta attenzione a se stessa</li>
+                        <li><strong>"gatto" → "Il" (0.30):</strong> "gatto" guarda "Il" per capire che è un sostantivo definito</li>
+                        <li><strong>"dorme" → "gatto" (0.40):</strong> "dorme" guarda "gatto" per capire chi sta dormendo</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <div style="font-size: 2em; color: #667eea;">⬇️</div>
+                    <div class="attention-score">
+                        Output = Attention_Scores × V
+                    </div>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #84fab0, #8fd3f4); padding: 20px; border-radius: 10px; color: white; text-align: center;">
+                    <h4 style="margin-bottom: 10px;">✨ Risultato Finale</h4>
+                    <p>Ogni token ora ha una nuova rappresentazione che incorpora informazioni contestuali da tutti gli altri token, pesate in base alla loro rilevanza!</p>
+                </div>
+            `;
+        }
+
+        async function showTranslationDemo() {
+            const vis = document.getElementById('visualization');
+            const panel = document.getElementById('infoPanel');
+            
+            panel.innerHTML = `
+                <h2>🌍 Demo Traduzione: Inglese → Italiano</h2>
+                <p>Vediamo passo-passo come un Transformer traduce una frase!</p>
+            `;
+            
+            vis.style.display = 'block';
+            vis.innerHTML = `
+                <div class="translation-demo">
+                    <h3 style="text-align: center; margin-bottom: 20px;">Traduzione in tempo reale</h3>
+                    
+                    <div class="sentence-container">
+                        <div class="sentence-box">
+                            <div class="sentence-title">🇬🇧 Input (Inglese)</div>
+                            <div id="sourceTokens">
+                                <div class="word-token">The</div>
+                                <div class="word-token">cat</div>
+                                <div class="word-token">sleeps</div>
+                            </div>
+                        </div>
+                        
+                        <div class="arrow-translation">→</div>
+                        
+                        <div class="sentence-box">
+                            <div class="sentence-title">🇮🇹 Output (Italiano)</div>
+                            <div id="targetTokens">
+                                <div class="word-token" style="opacity: 0.3;">&lt;START&gt;</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar">0%</div>
+                    </div>
+                    
+                    <div id="translationSteps"></div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="startTranslation()">▶️ Avvia Traduzione</button>
+                        <button class="btn btn-secondary" onclick="showTranslationDemo()">🔄 Reset Demo</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function startTranslation() {
+            const targetTokens = document.getElementById('targetTokens');
+            const stepsDiv = document.getElementById('translationSteps');
+            const progressBar = document.getElementById('progressBar');
+            
+            const translations = [
+                { word: 'Il', step: 'Decoder analizza &lt;START&gt; e l\'encoder output → Predice "Il"' },
+                { word: 'gatto', step: 'Decoder analizza "&lt;START&gt; Il" e l\'encoder output → Predice "gatto"' },
+                { word: 'dorme', step: 'Decoder analizza "&lt;START&gt; Il gatto" e l\'encoder output → Predice "dorme"' }
+            ];
+            
+            stepsDiv.innerHTML = '';
+            
+            for (let i = 0; i < translations.length; i++) {
+                await sleep(1500);
+                
+                // Add token
+                const token = document.createElement('div');
+                token.className = 'word-token';
+                token.textContent = translations[i].word;
+                token.style.animation = 'tokenFloat 1s ease-in-out';
+                targetTokens.appendChild(token);
+                
+                // Update progress
+                const progress = ((i + 1) / translations.length * 100).toFixed(0);
+                progressBar.style.width = progress + '%';
+                progressBar.textContent = progress + '%';
+                
+                // Add step explanation
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'translation-step';
+                stepDiv.style.animation = 'tokenFloat 0.5s ease-in-out';
+                stepDiv.innerHTML = `
+                    <strong>Passo ${i + 1}:</strong> ${translations[i].step}
+                    <br>
+                    <span style="opacity: 0.9; font-size: 0.95em;">
+                        → Cross Attention: Decoder guarda tutti i token dell'encoder<br>
+                        → Self Attention: Decoder guarda i token già generati<br>
+                        → Feed Forward: Elabora le informazioni<br>
+                        → Linear + Softmax: Sceglie il token più probabile
+                    </span>
+                `;
+                stepsDiv.appendChild(stepDiv);
+            }
+            
+            await sleep(1000);
+            
+            // Final message
+            const finalDiv = document.createElement('div');
+            finalDiv.className = 'translation-step';
+            finalDiv.style.background = 'rgba(132, 250, 176, 0.3)';
+            finalDiv.innerHTML = `
+                <strong>✅ Traduzione Completata!</strong><br>
+                <span style="font-size: 1.1em; margin-top: 10px; display: block;">
+                    "The cat sleeps" → "Il gatto dorme"
+                </span>
+                <br>
+                <span style="opacity: 0.9; font-size: 0.95em;">
+                    Il processo è <strong>autoregressivo</strong>: ogni token viene generato uno alla volta,
+                    usando tutti i token precedenti come contesto.
+                </span>
+            `;
+            stepsDiv.appendChild(finalDiv);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Show overview on load
+        showOverview();
+    </script>
+</body>
+</html>
