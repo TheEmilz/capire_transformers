@@ -1,6 +1,6 @@
-# 🤖 Tutorial Interattivo: Architettura Transformer
+# 🤖 Tutorial Interattivo: Architettura Transformers
 
-Un tutorial interattivo e visuale per comprendere l'architettura Transformer, introdotta nel paper "Attention is All You Need" (2017).
+Un tutorial interattivo e visuale per comprendere l'architettura Transformers, introdotta nel paper "Attention is All You Need" (2017).
 
 ## 📋 Descrizione
 
@@ -12,7 +12,7 @@ Questo progetto offre un tutorial completamente interattivo che ti permette di e
 - **Animazioni**: Osserva il flusso dei dati attraverso l'encoder e il decoder
 - **Demo di Traduzione**: Vedi come il Transformer traduce da una lingua all'altra
 - **Visualizzazione Q, K, V**: Esplora le matrici Query, Key e Value in dettaglio
-- **Confronto RNN vs Transformer**: Capisci i vantaggi dei Transformer rispetto alle RNN
+- **Confronto RNN vs Transformer**: Capisci i vantaggi dei Transformers rispetto alle RNN
 - **Playground Attention**: Sperimenta con i meccanismi di attention in tempo reale
 - **Multi-Head Detail**: Visualizza come ogni testa di attention cattura pattern diversi
 - **Positional Encoding 3D**: Visualizzazione interattiva del positional encoding
